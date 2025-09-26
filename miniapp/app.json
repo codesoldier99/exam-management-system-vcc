@@ -1,0 +1,67 @@
+{
+  "pages": [
+    "pages/student-login/student-login",
+    "pages/student-home/student-home",
+    "pages/qrcode/qrcode",
+    "pages/schedule/schedule",
+    "pages/board/board",
+    "pages/staff-login/staff-login",
+    "pages/scan/scan"
+  ],
+  "tabBar": {
+    "custom": false,
+    "color": "#999999",
+    "selectedColor": "#1890ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/student-home/student-home",
+        "text": "首页",
+        "iconPath": "static/icons/home.png",
+        "selectedIconPath": "static/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/schedule/schedule",
+        "text": "日程",
+        "iconPath": "static/icons/schedule.png",
+        "selectedIconPath": "static/icons/schedule-active.png"
+      },
+      {
+        "pagePath": "pages/qrcode/qrcode",
+        "text": "二维码",
+        "iconPath": "static/icons/qrcode.png",
+        "selectedIconPath": "static/icons/qrcode-active.png"
+      },
+      {
+        "pagePath": "pages/board/board",
+        "text": "看板",
+        "iconPath": "static/icons/board.png",
+        "selectedIconPath": "static/icons/board-active.png"
+      }
+    ]
+  },
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#1890ff",
+    "navigationBarTitleText": "无人机考点管理",
+    "navigationBarTextStyle": "white",
+    "enablePullDownRefresh": true,
+    "onReachBottomDistance": 50
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于扫码签到功能"
+    }
+  },
+  "requiredBackgroundModes": ["audio"],
+  "networkTimeout": {
+    "request": 60000,
+    "downloadFile": 60000
+  },
+  "debug": false,
+  "navigateToMiniProgramAppIdList": [],
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

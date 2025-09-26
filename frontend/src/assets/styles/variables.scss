@@ -1,0 +1,40 @@
+// 颜色变量
+$primary-color: #1890ff;
+$success-color: #52c41a;
+$warning-color: #fa8c16;
+$error-color: #ff4d4f;
+$info-color: #13c2c2;
+
+$text-color-primary: #262626;
+$text-color-secondary: #595959;
+$text-color-placeholder: #8c8c8c;
+
+$border-color-base: #d9d9d9;
+$border-color-light: #f0f0f0;
+
+$background-color-base: #fafafa;
+$background-color-light: #ffffff;
+
+// 尺寸变量
+$border-radius-base: 6px;
+$border-radius-small: 4px;
+$border-radius-large: 8px;
+
+$box-shadow-base: 0 2px 8px rgba(0, 0, 0, 0.15);
+$box-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+
+// 字体变量
+$font-size-base: 14px;
+$font-size-small: 12px;
+$font-size-large: 16px;
+$font-size-xl: 18px;
+$font-size-xxl: 20px;
+
+$line-height-base: 1.5715;
+
+// 间距变量
+$spacing-xs: 8px;
+$spacing-sm: 12px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;

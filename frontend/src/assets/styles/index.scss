@@ -1,0 +1,224 @@
+// 全局样式文件
+@import './variables.scss';
+@import './mixins.scss';
+
+// 重置默认样式
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+}
+
+// 通用工具类
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.d-flex { display: flex; }
+.d-block { display: block; }
+.d-inline { display: inline; }
+.d-inline-block { display: inline-block; }
+.d-none { display: none; }
+
+.justify-content-start { justify-content: flex-start; }
+.justify-content-center { justify-content: center; }
+.justify-content-end { justify-content: flex-end; }
+.justify-content-between { justify-content: space-between; }
+
+.align-items-start { align-items: flex-start; }
+.align-items-center { align-items: center; }
+.align-items-end { align-items: flex-end; }
+
+.flex-1 { flex: 1; }
+.flex-grow-1 { flex-grow: 1; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+// 间距工具类
+@for $i from 0 through 5 {
+  .m-#{$i} { margin: #{$i * 8}px; }
+  .mt-#{$i} { margin-top: #{$i * 8}px; }
+  .mr-#{$i} { margin-right: #{$i * 8}px; }
+  .mb-#{$i} { margin-bottom: #{$i * 8}px; }
+  .ml-#{$i} { margin-left: #{$i * 8}px; }
+  .mx-#{$i} { margin-left: #{$i * 8}px; margin-right: #{$i * 8}px; }
+  .my-#{$i} { margin-top: #{$i * 8}px; margin-bottom: #{$i * 8}px; }
+
+  .p-#{$i} { padding: #{$i * 8}px; }
+  .pt-#{$i} { padding-top: #{$i * 8}px; }
+  .pr-#{$i} { padding-right: #{$i * 8}px; }
+  .pb-#{$i} { padding-bottom: #{$i * 8}px; }
+  .pl-#{$i} { padding-left: #{$i * 8}px; }
+  .px-#{$i} { padding-left: #{$i * 8}px; padding-right: #{$i * 8}px; }
+  .py-#{$i} { padding-top: #{$i * 8}px; padding-bottom: #{$i * 8}px; }
+}
+
+// 页面容器
+.page-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+
+  .page-header {
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 16px;
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #262626;
+      margin: 0;
+    }
+
+    .page-description {
+      color: #8c8c8c;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+  }
+
+  .page-content {
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .content-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #262626;
+        margin: 0;
+      }
+    }
+  }
+}
+
+// 表格样式增强
+.el-table {
+  .status-tag {
+    &.status-active {
+      background-color: #f6ffed;
+      color: #52c41a;
+      border: 1px solid #b7eb8f;
+    }
+
+    &.status-inactive {
+      background-color: #fff2e8;
+      color: #fa8c16;
+      border: 1px solid #ffd591;
+    }
+
+    &.status-pending {
+      background-color: #f0f5ff;
+      color: #1890ff;
+      border: 1px solid #91d5ff;
+    }
+
+    &.status-completed {
+      background-color: #f6ffed;
+      color: #52c41a;
+      border: 1px solid #b7eb8f;
+    }
+
+    &.status-cancelled {
+      background-color: #fff1f0;
+      color: #ff4d4f;
+      border: 1px solid #ffccc7;
+    }
+  }
+}
+
+// 表单样式增强
+.form-container {
+  .form-section {
+    margin-bottom: 32px;
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #262626;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+  }
+}
+
+// 按钮组样式
+.button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  &.justify-end {
+    justify-content: flex-end;
+  }
+
+  &.justify-center {
+    justify-content: center;
+  }
+}
+
+// 统计卡片
+.stats-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  text-align: center;
+
+  .stats-number {
+    font-size: 32px;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 8px;
+  }
+
+  .stats-label {
+    color: #8c8c8c;
+    font-size: 14px;
+  }
+
+  &.primary {
+    .stats-number { color: #1890ff; }
+  }
+
+  &.success {
+    .stats-number { color: #52c41a; }
+  }
+
+  &.warning {
+    .stats-number { color: #fa8c16; }
+  }
+
+  &.danger {
+    .stats-number { color: #ff4d4f; }
+  }
+}
+
+// 响应式
+@media (max-width: 768px) {
+  .page-container {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 16px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    align-items: stretch;
+
+    .el-button {
+      margin: 0 0 8px 0;
+    }
+  }
+}

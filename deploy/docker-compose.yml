@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: exam-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-exam_root_123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-exam_system}
+      MYSQL_USER: ${MYSQL_USER:-exam_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-exam_password_123}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - exam-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: exam-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf
+    networks:
+      - exam-network
+    command: redis-server /etc/redis/redis.conf
+
+  # 后端API服务
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../deploy/Dockerfile.backend
+    container_name: exam-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-exam_system}
+      DB_USER: ${MYSQL_USER:-exam_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-exam_password_123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      QR_SECRET: ${QR_SECRET:-your-qr-secret-key}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    networks:
+      - exam-network
+    depends_on:
+      - mysql
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端静态文件服务
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../deploy/Dockerfile.frontend
+    container_name: exam-frontend
+    restart: unless-stopped
+    networks:
+      - exam-network
+    depends_on:
+      - backend
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: exam-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - frontend_dist:/usr/share/nginx/html
+      - nginx_logs:/var/log/nginx
+    networks:
+      - exam-network
+    depends_on:
+      - backend
+      - frontend
+
+  # 监控服务 (可选)
+  prometheus:
+    image: prom/prometheus
+    container_name: exam-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - exam-network
+    profiles:
+      - monitoring
+
+  # 可视化监控 (可选)
+  grafana:
+    image: grafana/grafana
+    container_name: exam-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - exam-network
+    profiles:
+      - monitoring
+    depends_on:
+      - prometheus
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+  frontend_dist:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  exam-network:
+    driver: bridge

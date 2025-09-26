@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Main application container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exam-management-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=exam_management
+      - DB_USER=exam_user
+      - DB_PASSWORD=exam_password_2024
+      - JWT_SECRET=exam_management_jwt_secret_production_2024
+      - JWT_EXPIRES_IN=7d
+      - UPLOAD_MAX_SIZE=10485760
+      - UPLOAD_PATH=/app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MySQL database
+  db:
+    image: mysql:8.0
+    container_name: exam-management-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_2024
+      - MYSQL_DATABASE=exam_management
+      - MYSQL_USER=exam_user
+      - MYSQL_PASSWORD=exam_password_2024
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: exam-management-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - uploads_data:/var/www/uploads:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  # Redis cache (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: exam-management-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  mysql_data:
+    driver: local
+  uploads_data:
+    driver: local
+  logs_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: exam-management-network

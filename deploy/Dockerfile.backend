@@ -1,0 +1,54 @@
+# 后端Node.js应用Dockerfile
+FROM node:18-alpine AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制package.json和package-lock.json
+COPY package*.json ./
+
+# 安装依赖
+RUN npm ci --only=production && npm cache clean --force
+
+# 生产镜像
+FROM node:18-alpine
+
+# 安装必要的系统包
+RUN apk add --no-cache \
+    curl \
+    dumb-init \
+    && rm -rf /var/cache/apk/*
+
+# 创建非root用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S exam -u 1001
+
+# 设置工作目录
+WORKDIR /app
+
+# 从builder阶段复制node_modules
+COPY --from=builder --chown=exam:nodejs /app/node_modules ./node_modules
+
+# 复制应用代码
+COPY --chown=exam:nodejs . .
+
+# 创建必要的目录
+RUN mkdir -p uploads logs temp && \
+    chown -R exam:nodejs uploads logs temp
+
+# 设置环境变量
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# 暴露端口
+EXPOSE 3000
+
+# 切换到非root用户
+USER exam
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# 启动应用
+CMD ["dumb-init", "node", "src/server.js"]
