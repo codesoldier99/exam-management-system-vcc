@@ -1,6 +1,15 @@
 # Multi-stage build for exam management system
 FROM node:18-alpine AS backend-builder
 
+# Install system dependencies needed for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    sqlite \
+    sqlite-dev \
+    pkgconfig
+
 # Set working directory for backend
 WORKDIR /app/backend
 
@@ -8,7 +17,7 @@ WORKDIR /app/backend
 COPY backend/package*.json ./
 
 # Install backend dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy backend source
 COPY backend/ ./
@@ -33,8 +42,16 @@ RUN npm run build
 # Final production image
 FROM node:18-alpine
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install runtime dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    sqlite \
+    tzdata \
+    curl
+
+# Set timezone
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create app user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

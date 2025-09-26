@@ -9,6 +9,8 @@ services:
     container_name: exam-management-app
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -16,8 +18,8 @@ services:
       - DB_PORT=3306
       - DB_NAME=exam_management
       - DB_USER=exam_user
-      - DB_PASSWORD=exam_password_2024
-      - JWT_SECRET=exam_management_jwt_secret_production_2024
+      - DB_PASSWORD=exam_password_123
+      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=7d
       - UPLOAD_MAX_SIZE=10485760
       - UPLOAD_PATH=/app/uploads
@@ -40,10 +42,10 @@ services:
     image: mysql:8.0
     container_name: exam-management-db
     environment:
-      - MYSQL_ROOT_PASSWORD=root_password_2024
+      - MYSQL_ROOT_PASSWORD=zyzn12345!
       - MYSQL_DATABASE=exam_management
       - MYSQL_USER=exam_user
-      - MYSQL_PASSWORD=exam_password_2024
+      - MYSQL_PASSWORD=exam_password_123
     ports:
       - "3306:3306"
     volumes:
@@ -63,7 +65,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dist:/var/www/html:ro
       - uploads_data:/var/www/uploads:ro
     depends_on:
       - app

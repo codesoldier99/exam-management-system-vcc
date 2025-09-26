@@ -5,7 +5,7 @@
 CREATE DATABASE IF NOT EXISTS exam_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Create database user
-CREATE USER IF NOT EXISTS 'exam_user'@'%' IDENTIFIED BY 'exam_password_production_2024';
+CREATE USER IF NOT EXISTS 'exam_user'@'%' IDENTIFIED BY 'exam_password_123';
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON exam_management.* TO 'exam_user'@'%';
