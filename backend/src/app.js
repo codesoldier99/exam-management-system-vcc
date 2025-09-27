@@ -29,6 +29,24 @@ app.use('/api/proctors', require('./routes/proctors'));
 app.use('/api/scores', require('./routes/scores'));
 app.use('/api/statistics', require('./routes/statistics'));
 
+// API根路径
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Exam Management System API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: '/api/auth',
+      users: '/api/users',
+      candidates: '/api/candidates',
+      institutions: '/api/institutions',
+      exams: '/api/exams',
+      health: '/health'
+    }
+  });
+});
+
 // 健康检查
 app.get('/health', (req, res) => {
   res.json({
