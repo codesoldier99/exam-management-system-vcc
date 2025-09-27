@@ -29,7 +29,7 @@ INSERT INTO `db_status` (`status`, `message`) VALUES
 ('initialized', 'Database initialized successfully for exam management system');
 
 -- Set MySQL configuration for better performance
-SET GLOBAL innodb_buffer_pool_size = 128M;
+--SET GLOBAL innodb_buffer_pool_size = 128M;
 SET GLOBAL max_connections = 100;
 SET GLOBAL query_cache_size = 32M;
 SET GLOBAL query_cache_type = 1;
