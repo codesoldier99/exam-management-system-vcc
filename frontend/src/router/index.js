@@ -33,125 +33,93 @@ const router = createRouter({
         },
         {
           path: 'candidates',
-          name: 'CandidatesLayout',
+          name: 'CandidatesList',
+          component: () => import('@/views/candidates/List.vue'),
           meta: {
             title: '考生管理',
-            icon: 'User'
-          },
-          children: [
-            {
-              path: '',
-              name: 'CandidatesList',
-              component: () => import('@/views/candidates/List.vue'),
-              meta: {
-                title: '考生列表',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN', 'PROCTOR']
-              }
-            },
-            {
-              path: 'import',
-              name: 'CandidatesImport',
-              component: () => import('@/views/candidates/Import.vue'),
-              meta: {
-                title: '批量导入',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN']
-              }
-            }
-          ]
+            icon: 'User',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN', 'PROCTOR']
+          }
         },
         {
-          path: 'schedules',
-          name: 'SchedulesLayout',
+          path: 'candidates/import',
+          name: 'CandidatesImport',
+          component: () => import('@/views/candidates/Import.vue'),
           meta: {
-            title: '排期管理',
-            icon: 'Calendar'
-          },
-          children: [
-            {
-              path: 'batch-create',
-              name: 'SchedulesBatchCreate',
-              component: () => import('@/views/schedules/BatchCreate.vue'),
-              meta: {
-                title: '批量排期',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN']
-              }
-            },
-            {
-              path: 'calendar',
-              name: 'SchedulesCalendar',
-              component: () => import('@/views/schedules/Calendar.vue'),
-              meta: {
-                title: '日程日历',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN', 'PROCTOR']
-              }
-            }
-          ]
+            title: '批量导入',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN'],
+            hidden: true
+          }
         },
         {
-          path: 'basic',
-          name: 'BasicLayout',
+          path: 'schedules/batch-create',
+          name: 'SchedulesBatchCreate',
+          component: () => import('@/views/schedules/BatchCreate.vue'),
           meta: {
-            title: '基础数据',
-            icon: 'Setting'
-          },
-          children: [
-            {
-              path: 'exam-products',
-              name: 'ExamProducts',
-              component: () => import('@/views/basic/ExamProducts.vue'),
-              meta: {
-                title: '考试产品',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN']
-              }
-            },
-            {
-              path: 'venues',
-              name: 'Venues',
-              component: () => import('@/views/basic/Venues.vue'),
-              meta: {
-                title: '考场管理',
-                roles: ['ADMIN', 'INSTITUTION_ADMIN']
-              }
-            },
-            {
-              path: 'institutions',
-              name: 'Institutions',
-              component: () => import('@/views/basic/Institutions.vue'),
-              meta: {
-                title: '机构管理',
-                roles: ['ADMIN']
-              }
-            }
-          ]
+            title: '批量排期',
+            icon: 'Calendar',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN']
+          }
         },
         {
-          path: 'system',
-          name: 'SystemLayout',
+          path: 'schedules/calendar',
+          name: 'SchedulesCalendar',
+          component: () => import('@/views/schedules/Calendar.vue'),
           meta: {
-            title: '系统管理',
+            title: '日程日历',
+            icon: 'Calendar',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN', 'PROCTOR']
+          }
+        },
+        {
+          path: 'basic/exam-products',
+          name: 'ExamProducts',
+          component: () => import('@/views/basic/ExamProducts.vue'),
+          meta: {
+            title: '考试产品',
+            icon: 'Setting',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN']
+          }
+        },
+        {
+          path: 'basic/venues',
+          name: 'Venues',
+          component: () => import('@/views/basic/Venues.vue'),
+          meta: {
+            title: '考场管理',
+            icon: 'Setting',
+            roles: ['ADMIN', 'INSTITUTION_ADMIN']
+          }
+        },
+        {
+          path: 'basic/institutions',
+          name: 'Institutions',
+          component: () => import('@/views/basic/Institutions.vue'),
+          meta: {
+            title: '机构管理',
+            icon: 'Setting',
+            roles: ['ADMIN']
+          }
+        },
+        {
+          path: 'system/users',
+          name: 'Users',
+          component: () => import('@/views/system/Users.vue'),
+          meta: {
+            title: '用户管理',
             icon: 'Tools',
             roles: ['ADMIN']
-          },
-          children: [
-            {
-              path: 'users',
-              name: 'Users',
-              component: () => import('@/views/system/Users.vue'),
-              meta: {
-                title: '用户管理',
-                roles: ['ADMIN']
-              }
-            },
-            {
-              path: 'roles',
-              name: 'Roles',
-              component: () => import('@/views/system/Roles.vue'),
-              meta: {
-                title: '角色管理',
-                roles: ['ADMIN']
-              }
-            }
-          ]
+          }
+        },
+        {
+          path: 'system/roles',
+          name: 'Roles',
+          component: () => import('@/views/system/Roles.vue'),
+          meta: {
+            title: '角色管理',
+            icon: 'Tools',
+            roles: ['ADMIN']
+          }
         }
       ]
     },

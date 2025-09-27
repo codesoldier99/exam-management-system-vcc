@@ -133,36 +133,257 @@
         </div>
       </div>
     </div>
+
+    <!-- 新增考生对话框 -->
+    <el-dialog
+      v-model="addDialogVisible"
+      title="新增考生"
+      width="600px"
+      :before-close="handleCloseDialog"
+    >
+      <el-form
+        ref="candidateFormRef"
+        :model="candidateForm"
+        :rules="candidateRules"
+        label-width="100px"
+      >
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="candidateForm.name" placeholder="请输入考生姓名" />
+        </el-form-item>
+
+        <el-form-item label="身份证号" prop="id_number">
+          <el-input v-model="candidateForm.id_number" placeholder="请输入身份证号" />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="candidateForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="candidateForm.email" placeholder="请输入邮箱地址" />
+        </el-form-item>
+
+        <el-form-item label="性别" prop="gender">
+          <el-radio-group v-model="candidateForm.gender">
+            <el-radio value="male">男</el-radio>
+            <el-radio value="female">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="出生日期" prop="birth_date">
+          <el-input v-model="candidateForm.birth_date" type="date" />
+        </el-form-item>
+
+        <el-form-item label="联系地址" prop="address">
+          <el-input v-model="candidateForm.address" type="textarea" placeholder="请输入联系地址" />
+        </el-form-item>
+
+        <el-form-item label="报名号" prop="registration_number">
+          <el-input v-model="candidateForm.registration_number" placeholder="请输入报名号" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="addDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmitAdd">确认</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑考生对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑考生"
+      width="600px"
+      :before-close="handleCloseDialog"
+    >
+      <el-form
+        ref="candidateFormRef"
+        :model="candidateForm"
+        :rules="candidateRules"
+        label-width="100px"
+      >
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="candidateForm.name" placeholder="请输入考生姓名" />
+        </el-form-item>
+
+        <el-form-item label="身份证号" prop="id_number">
+          <el-input v-model="candidateForm.id_number" placeholder="请输入身份证号" />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="candidateForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="candidateForm.email" placeholder="请输入邮箱地址" />
+        </el-form-item>
+
+        <el-form-item label="性别" prop="gender">
+          <el-radio-group v-model="candidateForm.gender">
+            <el-radio value="male">男</el-radio>
+            <el-radio value="female">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="出生日期" prop="birth_date">
+          <el-input v-model="candidateForm.birth_date" type="date" />
+        </el-form-item>
+
+        <el-form-item label="联系地址" prop="address">
+          <el-input v-model="candidateForm.address" type="textarea" placeholder="请输入联系地址" />
+        </el-form-item>
+
+        <el-form-item label="报名号" prop="registration_number">
+          <el-input v-model="candidateForm.registration_number" placeholder="请输入报名号" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmitEdit">确认</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 查看考生详情对话框 -->
+    <el-dialog
+      v-model="viewDialogVisible"
+      title="考生详情"
+      width="600px"
+    >
+      <div v-if="currentCandidate" class="candidate-detail">
+        <div class="detail-row">
+          <span class="label">姓名：</span>
+          <span class="value">{{ currentCandidate.name }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">身份证号：</span>
+          <span class="value">{{ currentCandidate.id_number }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">手机号：</span>
+          <span class="value">{{ currentCandidate.phone }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">邮箱：</span>
+          <span class="value">{{ currentCandidate.email || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">性别：</span>
+          <span class="value">{{ currentCandidate.gender === 'male' ? '男' : currentCandidate.gender === 'female' ? '女' : '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">出生日期：</span>
+          <span class="value">{{ currentCandidate.birth_date || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">联系地址：</span>
+          <span class="value">{{ currentCandidate.address || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">报名号：</span>
+          <span class="value">{{ currentCandidate.registration_number || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">所属机构：</span>
+          <span class="value">{{ currentCandidate.institution?.name || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">状态：</span>
+          <el-tag :type="currentCandidate.status === 'active' ? 'success' : 'danger'">
+            {{ currentCandidate.status === 'active' ? '正常' : '禁用' }}
+          </el-tag>
+        </div>
+        <div class="detail-row">
+          <span class="label">创建时间：</span>
+          <span class="value">{{ formatDate(currentCandidate.created_at) }}</span>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="viewDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElRadioGroup, ElRadio } from 'element-plus'
 import {
   Search,
   Plus,
   Upload,
-  Download
+  Download,
+  Edit,
+  View,
+  Delete
 } from '@element-plus/icons-vue'
+import { useCandidatesStore } from '@/store/candidates'
+import { useAuthStore } from '@/store/auth'
 
 const router = useRouter()
+const candidatesStore = useCandidatesStore()
+const authStore = useAuthStore()
 
 // 数据状态
-const loading = ref(false)
-const tableData = ref([])
+const loading = computed(() => candidatesStore.loading)
+const tableData = computed(() => candidatesStore.candidates)
+const pagination = computed(() => candidatesStore.pagination)
 
 const searchForm = reactive({
   search: '',
   status: ''
 })
 
-const pagination = reactive({
-  page: 1,
-  limit: 20,
-  total: 0
+// 对话框状态
+const addDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const viewDialogVisible = ref(false)
+
+// 表单数据
+const candidateForm = ref({
+  name: '',
+  id_number: '',
+  phone: '',
+  email: '',
+  gender: 'male',
+  birth_date: '',
+  address: '',
+  registration_number: '',
+  institution_id: null
 })
+
+// 表单验证规则
+const candidateRules = {
+  name: [
+    { required: true, message: '请输入考生姓名', trigger: 'blur' },
+    { min: 2, max: 50, message: '姓名长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  id_number: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
+    { pattern: /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/, message: '请输入正确的身份证号', trigger: 'blur' }
+  ],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ],
+  gender: [
+    { required: true, message: '请选择性别', trigger: 'change' }
+  ]
+}
+
+const candidateFormRef = ref()
+const currentCandidate = ref(null)
 
 // 方法
 const formatDate = (dateString) => {
@@ -171,20 +392,22 @@ const formatDate = (dateString) => {
 }
 
 const handleSearch = () => {
-  pagination.page = 1
-  loadData()
+  candidatesStore.setSearchForm(searchForm)
+  candidatesStore.setPagination({ page: 1 })
+  candidatesStore.loadCandidates()
 }
 
 const resetSearch = () => {
   searchForm.search = ''
   searchForm.status = ''
-  pagination.page = 1
-  loadData()
+  candidatesStore.resetSearchForm()
+  candidatesStore.setPagination({ page: 1 })
+  candidatesStore.loadCandidates()
 }
 
 const handleAdd = () => {
-  // TODO: 打开新增对话框或跳转新增页面
-  ElMessage.info('功能开发中')
+  resetCandidateForm()
+  addDialogVisible.value = true
 }
 
 const handleImport = () => {
@@ -192,18 +415,42 @@ const handleImport = () => {
 }
 
 const handleExport = () => {
-  // TODO: 导出功能
-  ElMessage.info('导出功能开发中')
+  candidatesStore.exportCandidates()
 }
 
-const handleView = (row) => {
-  // TODO: 查看详情
-  ElMessage.info(`查看考生: ${row.name}`)
+const handleView = async (row) => {
+  try {
+    await candidatesStore.getCandidateById(row.id)
+    currentCandidate.value = candidatesStore.currentCandidate
+    viewDialogVisible.value = true
+  } catch (error) {
+    // 错误已在store中处理
+  }
 }
 
-const handleEdit = (row) => {
-  // TODO: 编辑功能
-  ElMessage.info(`编辑考生: ${row.name}`)
+const handleEdit = async (row) => {
+  try {
+    await candidatesStore.getCandidateById(row.id)
+    const candidate = candidatesStore.currentCandidate
+
+    // 填充表单数据
+    candidateForm.value = {
+      name: candidate.name || '',
+      id_number: candidate.id_number || '',
+      phone: candidate.phone || '',
+      email: candidate.email || '',
+      gender: candidate.gender || 'male',
+      birth_date: candidate.birth_date || '',
+      address: candidate.address || '',
+      registration_number: candidate.registration_number || '',
+      institution_id: candidate.institution_id || null
+    }
+
+    currentCandidate.value = candidate
+    editDialogVisible.value = true
+  } catch (error) {
+    // 错误已在store中处理
+  }
 }
 
 const handleDelete = async (row) => {
@@ -218,62 +465,75 @@ const handleDelete = async (row) => {
       }
     )
 
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-    loadData()
+    await candidatesStore.deleteCandidate(row.id)
   } catch (error) {
-    // 用户取消删除
+    // 用户取消删除或删除失败
   }
 }
 
 const handleSizeChange = (size) => {
-  pagination.limit = size
-  pagination.page = 1
-  loadData()
+  candidatesStore.setPagination({ limit: size, page: 1 })
+  candidatesStore.loadCandidates()
 }
 
 const handleCurrentChange = (page) => {
-  pagination.page = page
-  loadData()
+  candidatesStore.setPagination({ page })
+  candidatesStore.loadCandidates()
 }
 
-const loadData = async () => {
-  try {
-    loading.value = true
-
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // 模拟数据
-    const mockData = Array.from({ length: pagination.limit }, (_, index) => ({
-      id: (pagination.page - 1) * pagination.limit + index + 1,
-      name: `考生${(pagination.page - 1) * pagination.limit + index + 1}`,
-      id_number: `110101199001010${String(index + 1).padStart(3, '0')}`,
-      phone: `138001380${String(index + 1).padStart(2, '0')}`,
-      email: `candidate${index + 1}@example.com`,
-      gender: index % 3 === 0 ? 'male' : index % 3 === 1 ? 'female' : null,
-      institution: {
-        id: 1,
-        name: '测试机构'
-      },
-      status: index % 10 === 0 ? 'inactive' : 'active',
-      created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-    }))
-
-    tableData.value = mockData
-    pagination.total = 150 // 模拟总数
-
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    ElMessage.error('加载数据失败')
-  } finally {
-    loading.value = false
+// 表单处理
+const resetCandidateForm = () => {
+  candidateForm.value = {
+    name: '',
+    id_number: '',
+    phone: '',
+    email: '',
+    gender: 'male',
+    birth_date: '',
+    address: '',
+    registration_number: '',
+    institution_id: authStore.user?.institution_id || null
   }
+  currentCandidate.value = null
+
+  if (candidateFormRef.value) {
+    candidateFormRef.value.resetFields()
+  }
+}
+
+const handleSubmitAdd = async () => {
+  if (!candidateFormRef.value) return
+
+  try {
+    await candidateFormRef.value.validate()
+    await candidatesStore.createCandidate(candidateForm.value)
+    addDialogVisible.value = false
+    resetCandidateForm()
+  } catch (error) {
+    // 表单验证失败或创建失败
+  }
+}
+
+const handleSubmitEdit = async () => {
+  if (!candidateFormRef.value || !currentCandidate.value) return
+
+  try {
+    await candidateFormRef.value.validate()
+    await candidatesStore.updateCandidate(currentCandidate.value.id, candidateForm.value)
+    editDialogVisible.value = false
+    resetCandidateForm()
+  } catch (error) {
+    // 表单验证失败或更新失败
+  }
+}
+
+const handleCloseDialog = () => {
+  resetCandidateForm()
 }
 
 // 生命周期
 onMounted(() => {
-  loadData()
+  candidatesStore.loadCandidates()
 })
 </script>
 
@@ -305,6 +565,33 @@ onMounted(() => {
   }
 }
 
+// 考生详情样式
+.candidate-detail {
+  .detail-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .label {
+      min-width: 100px;
+      font-weight: 500;
+      color: #606266;
+    }
+
+    .value {
+      flex: 1;
+      color: #303133;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .candidates-list {
     .content-header {
@@ -313,6 +600,18 @@ onMounted(() => {
 
       .actions {
         flex-wrap: wrap;
+      }
+    }
+  }
+
+  .candidate-detail {
+    .detail-row {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .label {
+        margin-bottom: 4px;
+        min-width: auto;
       }
     }
   }

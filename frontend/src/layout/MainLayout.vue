@@ -18,7 +18,7 @@
           router
         >
           <template v-for="route in menuRoutes" :key="route.path">
-            <el-sub-menu v-if="route.children && route.children.length > 0" :index="route.path">
+            <el-sub-menu v-if="route.children && route.children.length > 1" :index="route.path">
               <template #title>
                 <el-icon><component :is="route.meta.icon" /></el-icon>
                 <span>{{ route.meta.title }}</span>
@@ -27,12 +27,21 @@
               <el-menu-item
                 v-for="child in route.children"
                 :key="child.path"
-                :index="route.path + '/' + child.path"
+                :index="child.path"
                 v-show="hasRoutePermission(child)"
               >
                 <span>{{ child.meta.title }}</span>
               </el-menu-item>
             </el-sub-menu>
+
+            <el-menu-item
+              v-else-if="route.children && route.children.length === 1"
+              :index="route.children[0].path"
+              v-show="hasRoutePermission(route.children[0])"
+            >
+              <el-icon><component :is="route.meta.icon" /></el-icon>
+              <span>{{ route.children[0].meta.title }}</span>
+            </el-menu-item>
 
             <el-menu-item
               v-else
@@ -179,14 +188,50 @@ const activeMenu = computed(() => {
 
 // 菜单路由配置
 const menuRoutes = computed(() => {
-  return router.getRoutes()
+  const routes = router.getRoutes()
     .find(r => r.path === '/')
     ?.children?.filter(route =>
       route.meta?.title &&
       !route.meta?.hidden &&
       hasRoutePermission(route)
     ) || []
+
+  // 按icon分组，同一icon的路由归为一组
+  const groupedRoutes = []
+  const iconGroups = {}
+
+  routes.forEach(route => {
+    const icon = route.meta?.icon
+    if (icon) {
+      if (!iconGroups[icon]) {
+        iconGroups[icon] = {
+          path: route.path,
+          meta: {
+            title: getGroupTitle(icon),
+            icon: icon
+          },
+          children: []
+        }
+        groupedRoutes.push(iconGroups[icon])
+      }
+      iconGroups[icon].children.push(route)
+    } else {
+      groupedRoutes.push(route)
+    }
+  })
+
+  return groupedRoutes
 })
+
+const getGroupTitle = (icon) => {
+  const titleMap = {
+    'User': '考生管理',
+    'Calendar': '排期管理',
+    'Setting': '基础数据',
+    'Tools': '系统管理'
+  }
+  return titleMap[icon] || '其他'
+}
 
 // 用户头像
 const userAvatar = ref('')
