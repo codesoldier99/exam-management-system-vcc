@@ -1,0 +1,117 @@
+# 优化版Dockerfile - 使用国内镜像源加速构建
+FROM node:18-alpine AS backend-builder
+
+# 使用阿里云镜像源加速apk包下载
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# Install system dependencies needed for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    sqlite \
+    sqlite-dev \
+    pkgconfig
+
+# Set working directory for backend
+WORKDIR /app/backend
+
+# Copy backend package files
+COPY backend/package*.json ./
+
+# 使用淘宝npm镜像源加速依赖下载
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set disturl https://npmmirror.com/dist && \
+    npm config set sass_binary_site https://npmmirror.com/mirrors/node-sass && \
+    npm config set electron_mirror https://npmmirror.com/mirrors/electron/ && \
+    npm config set puppeteer_download_host https://npmmirror.com/mirrors && \
+    npm config set chromedriver_cdnurl https://npmmirror.com/mirrors/chromedriver && \
+    npm config set operadriver_cdnurl https://npmmirror.com/mirrors/operadriver && \
+    npm config set phantomjs_cdnurl https://npmmirror.com/mirrors/phantomjs && \
+    npm config set selenium_cdnurl https://npmmirror.com/mirrors/selenium && \
+    npm config set node_inspector_cdnurl https://npmmirror.com/mirrors/node-inspector
+
+# Install backend dependencies
+RUN npm ci --omit=dev
+
+# Copy backend source
+COPY backend/ ./
+
+FROM node:18-alpine AS frontend-builder
+
+# 使用阿里云镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# Set working directory for frontend
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# 使用淘宝npm镜像源
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set disturl https://npmmirror.com/dist && \
+    npm config set sass_binary_site https://npmmirror.com/mirrors/node-sass && \
+    npm config set electron_mirror https://npmmirror.com/mirrors/electron/ && \
+    npm config set puppeteer_download_host https://npmmirror.com/mirrors && \
+    npm config set chromedriver_cdnurl https://npmmirror.com/mirrors/chromedriver && \
+    npm config set operadriver_cdnurl https://npmmirror.com/mirrors/operadriver && \
+    npm config set phantomjs_cdnurl https://npmmirror.com/mirrors/phantomjs && \
+    npm config set selenium_cdnurl https://npmmirror.com/mirrors/selenium && \
+    npm config set node_inspector_cdnurl https://npmmirror.com/mirrors/node-inspector
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build frontend for production
+RUN npm run build
+
+# Final production image - 使用阿里云Docker镜像
+FROM registry.cn-hangzhou.aliyuncs.com/acs/node:18-alpine
+
+# 使用阿里云镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    sqlite \
+    tzdata \
+    curl
+
+# Set timezone
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Create app user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set working directory
+WORKDIR /app
+
+# Copy backend from builder
+COPY --from=backend-builder --chown=appuser:appgroup /app/backend ./backend
+
+# Copy built frontend from builder
+COPY --from=frontend-builder --chown=appuser:appgroup /app/frontend/dist ./frontend/dist
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R appuser:appgroup /app/uploads /app/logs
+
+# Switch to app user
+USER appuser
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
+
+# Start application with dumb-init
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "backend/src/app.js"]
