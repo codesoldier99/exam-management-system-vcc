@@ -37,9 +37,9 @@ services:
       retries: 3
       start_period: 40s
 
-  # MySQL database - 使用DaoCloud镜像源
+  # MySQL database - 使用官方镜像+Docker加速器
   db:
-    image: daocloud.io/library/mysql:8.0
+    image: mysql:8.0
     container_name: exam-management-db
     environment:
       - MYSQL_ROOT_PASSWORD=zyzn12345!
@@ -57,9 +57,9 @@ services:
       timeout: 20s
       retries: 10
 
-  # Nginx reverse proxy - 使用DaoCloud镜像源
+  # Nginx reverse proxy - 使用官方镜像+Docker加速器
   nginx:
-    image: daocloud.io/library/nginx:alpine
+    image: nginx:alpine
     container_name: exam-management-nginx
     ports:
       - "80:80"
@@ -72,9 +72,9 @@ services:
       - app
     restart: unless-stopped
 
-  # Redis cache - 使用DaoCloud镜像源
+  # Redis cache - 使用官方镜像+Docker加速器
   redis:
-    image: daocloud.io/library/redis:7-alpine
+    image: redis:7-alpine
     container_name: exam-management-redis
     ports:
       - "6379:6379"

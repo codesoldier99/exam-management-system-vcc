@@ -10,36 +10,56 @@ echo "📋 检查环境依赖..."
 docker --version || { echo "❌ Docker 未安装"; exit 1; }
 docker-compose --version || { echo "❌ Docker Compose 未安装"; exit 1; }
 
-# 配置Docker镜像加速器（如果还没配置）
+# 配置Docker镜像加速器（2024年稳定镜像源）
 echo "🌐 配置Docker镜像加速器..."
 DOCKER_CONFIG_DIR="/etc/docker"
 DOCKER_CONFIG_FILE="$DOCKER_CONFIG_DIR/daemon.json"
 
-if [ ! -f "$DOCKER_CONFIG_FILE" ]; then
-    echo "正在配置Docker镜像加速器..."
-    sudo mkdir -p $DOCKER_CONFIG_DIR
-    sudo tee $DOCKER_CONFIG_FILE > /dev/null <<EOF
+# 备份现有配置
+if [ -f "$DOCKER_CONFIG_FILE" ]; then
+    sudo cp "$DOCKER_CONFIG_FILE" "$DOCKER_CONFIG_FILE.backup.$(date +%Y%m%d%H%M%S)"
+fi
+
+echo "正在配置2024年稳定的Docker镜像加速器..."
+sudo mkdir -p $DOCKER_CONFIG_DIR
+sudo tee $DOCKER_CONFIG_FILE > /dev/null <<EOF
 {
   "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://dockerproxy.com",
     "https://docker.mirrors.ustc.edu.cn",
-    "https://hub-mirror.c.163.com",
-    "https://mirror.baidubce.com",
-    "https://ccr.ccs.tencentyun.com"
+    "https://docker.nju.edu.cn",
+    "https://hub-mirror.c.163.com"
   ],
   "insecure-registries": [],
   "debug": false,
   "experimental": false,
   "features": {
     "buildkit": true
-  }
+  },
+  "max-concurrent-downloads": 10,
+  "max-concurrent-uploads": 5
 }
 EOF
-    echo "重启Docker服务..."
-    sudo systemctl restart docker
-    sleep 10
+
+echo "重启Docker服务..."
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+echo "等待Docker服务启动..."
+sleep 15
+
+# 验证Docker服务状态
+if sudo systemctl is-active --quiet docker; then
     echo "✅ Docker镜像加速器配置完成"
+    echo "📋 配置的镜像源："
+    echo "   - https://docker.m.daocloud.io"
+    echo "   - https://dockerproxy.com"
+    echo "   - https://docker.mirrors.ustc.edu.cn"
+    echo "   - https://docker.nju.edu.cn"
+    echo "   - https://hub-mirror.c.163.com"
 else
-    echo "✅ Docker镜像加速器已配置"
+    echo "❌ Docker服务启动失败，请检查配置"
+    exit 1
 fi
 
 # 配置npm镜像源
