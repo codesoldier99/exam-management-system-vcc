@@ -44,9 +44,23 @@ fi
 
 # 配置npm镜像源
 echo "📦 配置npm镜像源..."
-npm config set registry https://registry.npmmirror.com
-npm config set disturl https://npmmirror.com/dist
-npm config set sass_binary_site https://npmmirror.com/mirrors/node-sass
+# 创建全局.npmrc文件而不是使用npm config set（兼容npm 9+）
+cat > ~/.npmrc << EOF
+registry=https://registry.npmmirror.com
+dist-url=https://npmmirror.com/mirrors/node
+sass_binary_site=https://npmmirror.com/mirrors/node-sass
+electron_mirror=https://npmmirror.com/mirrors/electron/
+puppeteer_download_host=https://npmmirror.com/mirrors
+chromedriver_cdnurl=https://npmmirror.com/mirrors/chromedriver
+operadriver_cdnurl=https://npmmirror.com/mirrors/operadriver
+phantomjs_cdnurl=https://npmmirror.com/mirrors/phantomjs
+selenium_cdnurl=https://npmmirror.com/mirrors/selenium
+node_inspector_cdnurl=https://npmmirror.com/mirrors/node-inspector
+sqlite3_binary_site=https://npmmirror.com/mirrors/sqlite3
+sharp_binary_host=https://npmmirror.com/mirrors/sharp
+sharp_libvips_binary_host=https://npmmirror.com/mirrors/sharp-libvips
+fse_binary_host_mirror=https://npmmirror.com/mirrors/fsevents
+EOF
 echo "✅ npm镜像源配置完成"
 
 # 停止现有服务
@@ -61,12 +75,12 @@ docker system prune -f || true
 echo "🔨 构建前端应用（使用国内镜像源）..."
 cd frontend
 
-# 检查并创建.npmrc文件
+# 检查并创建前端目录的.npmrc文件
 if [ ! -f ".npmrc" ]; then
-    echo "创建.npmrc文件..."
+    echo "创建前端.npmrc文件..."
     cat > .npmrc << EOF
 registry=https://registry.npmmirror.com
-disturl=https://npmmirror.com/dist
+dist-url=https://npmmirror.com/mirrors/node
 sass_binary_site=https://npmmirror.com/mirrors/node-sass
 electron_mirror=https://npmmirror.com/mirrors/electron/
 puppeteer_download_host=https://npmmirror.com/mirrors
@@ -75,7 +89,13 @@ operadriver_cdnurl=https://npmmirror.com/mirrors/operadriver
 phantomjs_cdnurl=https://npmmirror.com/mirrors/phantomjs
 selenium_cdnurl=https://npmmirror.com/mirrors/selenium
 node_inspector_cdnurl=https://npmmirror.com/mirrors/node-inspector
+sqlite3_binary_site=https://npmmirror.com/mirrors/sqlite3
+sharp_binary_host=https://npmmirror.com/mirrors/sharp
+sharp_libvips_binary_host=https://npmmirror.com/mirrors/sharp-libvips
+fse_binary_host_mirror=https://npmmirror.com/mirrors/fsevents
 EOF
+else
+    echo "✅ 前端.npmrc文件已存在"
 fi
 
 npm install --production=false
