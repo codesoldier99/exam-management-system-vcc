@@ -452,6 +452,63 @@ export const useSystemStore = defineStore('system', {
       }
     },
 
+    // 创建考场
+    async createVenue(venueData) {
+      try {
+        const response = await venuesAPI.createVenue(venueData)
+
+        if (response.success) {
+          ElMessage.success('创建考场成功')
+          await this.loadVenues()
+          return response.data
+        } else {
+          throw new Error(response.message || '创建考场失败')
+        }
+      } catch (error) {
+        console.error('创建考场失败:', error)
+        ElMessage.error(error.message || '创建考场失败')
+        throw error
+      }
+    },
+
+    // 更新考场
+    async updateVenue(id, venueData) {
+      try {
+        const response = await venuesAPI.updateVenue(id, venueData)
+
+        if (response.success) {
+          ElMessage.success('更新考场成功')
+          await this.loadVenues()
+          return response.data
+        } else {
+          throw new Error(response.message || '更新考场失败')
+        }
+      } catch (error) {
+        console.error('更新考场失败:', error)
+        ElMessage.error(error.message || '更新考场失败')
+        throw error
+      }
+    },
+
+    // 删除考场
+    async deleteVenue(id) {
+      try {
+        const response = await venuesAPI.deleteVenue(id)
+
+        if (response.success) {
+          ElMessage.success('删除考场成功')
+          await this.loadVenues()
+          return true
+        } else {
+          throw new Error(response.message || '删除考场失败')
+        }
+      } catch (error) {
+        console.error('删除考场失败:', error)
+        ElMessage.error(error.message || '删除考场失败')
+        throw error
+      }
+    },
+
     // ==================== 考试产品管理 ====================
 
     // 加载考试产品列表
@@ -482,6 +539,63 @@ export const useSystemStore = defineStore('system', {
         this.examProducts = []
       } finally {
         this.examProductsLoading = false
+      }
+    },
+
+    // 创建考试产品
+    async createExamProduct(productData) {
+      try {
+        const response = await examProductsAPI.createExamProduct(productData)
+
+        if (response.success) {
+          ElMessage.success('创建考试产品成功')
+          await this.loadExamProducts()
+          return response.data
+        } else {
+          throw new Error(response.message || '创建考试产品失败')
+        }
+      } catch (error) {
+        console.error('创建考试产品失败:', error)
+        ElMessage.error(error.message || '创建考试产品失败')
+        throw error
+      }
+    },
+
+    // 更新考试产品
+    async updateExamProduct(id, productData) {
+      try {
+        const response = await examProductsAPI.updateExamProduct(id, productData)
+
+        if (response.success) {
+          ElMessage.success('更新考试产品成功')
+          await this.loadExamProducts()
+          return response.data
+        } else {
+          throw new Error(response.message || '更新考试产品失败')
+        }
+      } catch (error) {
+        console.error('更新考试产品失败:', error)
+        ElMessage.error(error.message || '更新考试产品失败')
+        throw error
+      }
+    },
+
+    // 删除考试产品
+    async deleteExamProduct(id) {
+      try {
+        const response = await examProductsAPI.deleteExamProduct(id)
+
+        if (response.success) {
+          ElMessage.success('删除考试产品成功')
+          await this.loadExamProducts()
+          return true
+        } else {
+          throw new Error(response.message || '删除考试产品失败')
+        }
+      } catch (error) {
+        console.error('删除考试产品失败:', error)
+        ElMessage.error(error.message || '删除考试产品失败')
+        throw error
       }
     },
 

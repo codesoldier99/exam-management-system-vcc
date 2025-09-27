@@ -111,10 +111,10 @@
                 <el-table-column prop="name" label="姓名" min-width="100" />
                 <el-table-column prop="id_number" label="身份证号" min-width="180" />
                 <el-table-column prop="phone" label="手机号" min-width="120" />
-                <el-table-column prop="gender" label="性别" width="80">
+                <el-table-column prop="displayGender" label="性别" width="80">
                   <template #default="{ row }">
-                    <el-tag :type="getGenderTagType(row.gender)">
-                      {{ row.gender }}
+                    <el-tag :type="getGenderTagType(row.displayGender)">
+                      {{ row.displayGender }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -311,8 +311,13 @@ import {
   CircleCheck,
   CircleClose
 } from '@element-plus/icons-vue'
+import { useCandidatesStore } from '@/store/candidates'
+import { useAuthStore } from '@/store/auth'
+import * as XLSX from 'xlsx'
 
 const router = useRouter()
+const candidatesStore = useCandidatesStore()
+const authStore = useAuthStore()
 
 // 数据状态
 const uploadRef = ref()
@@ -403,75 +408,221 @@ const removeFile = () => {
 }
 
 const downloadTemplate = () => {
-  // 创建模板数据
-  const templateData = [
-    {
-      '姓名': '张三',
-      '身份证号': '110101199001011234',
-      '手机号': '13800138001',
-      '性别': '男',
-      '邮箱': 'zhangsan@example.com',
-      '地址': '北京市朝阳区示例街道1号',
-      '出生日期': '1990-01-01'
-    },
-    {
-      '姓名': '李四',
-      '身份证号': '110101199102022345',
-      '手机号': '13800138002',
-      '性别': '女',
-      '邮箱': 'lisi@example.com',
-      '地址': '北京市海淀区示例街道2号',
-      '出生日期': '1991-02-02'
-    }
-  ]
+  try {
+    // 创建模板数据 - 包含示例数据和空行
+    const templateData = [
+      {
+        '姓名*': '张三',
+        '身份证号*': '110101199001011234',
+        '手机号*': '13800138001',
+        '性别*': '男',
+        '邮箱': 'zhangsan@example.com',
+        '联系地址': '北京市朝阳区示例街道1号',
+        '出生日期': '1990-01-01',
+        '报名号': 'REG2024001'
+      },
+      {
+        '姓名*': '李四',
+        '身份证号*': '110101199102022345',
+        '手机号*': '13800138002',
+        '性别*': '女',
+        '邮箱': 'lisi@example.com',
+        '联系地址': '北京市海淀区示例街道2号',
+        '出生日期': '1991-02-02',
+        '报名号': 'REG2024002'
+      },
+      // 空行供用户填写
+      ...Array.from({ length: 10 }, () => ({
+        '姓名*': '',
+        '身份证号*': '',
+        '手机号*': '',
+        '性别*': '',
+        '邮箱': '',
+        '联系地址': '',
+        '出生日期': '',
+        '报名号': ''
+      }))
+    ]
 
-  // 这里应该调用导出Excel的方法
-  ElMessage.success('模板下载功能开发中')
+    // 创建工作簿
+    const wb = XLSX.utils.book_new()
+
+    // 创建工作表
+    const ws = XLSX.utils.json_to_sheet(templateData)
+
+    // 设置列宽
+    const colWidths = [
+      { wch: 12 }, // 姓名
+      { wch: 20 }, // 身份证号
+      { wch: 15 }, // 手机号
+      { wch: 8 },  // 性别
+      { wch: 25 }, // 邮箱
+      { wch: 30 }, // 联系地址
+      { wch: 12 }, // 出生日期
+      { wch: 15 }  // 报名号
+    ]
+    ws['!cols'] = colWidths
+
+    // 添加说明工作表
+    const instructionData = [
+      { '字段': '姓名*', '说明': '必填，考生真实姓名，2-50个字符', '示例': '张三' },
+      { '字段': '身份证号*', '说明': '必填，18位有效身份证号码', '示例': '110101199001011234' },
+      { '字段': '手机号*', '说明': '必填，11位有效手机号码', '示例': '13800138001' },
+      { '字段': '性别*', '说明': '必填，只能填写"男"或"女"', '示例': '男' },
+      { '字段': '邮箱', '说明': '选填，有效的邮箱地址', '示例': 'zhangsan@example.com' },
+      { '字段': '联系地址', '说明': '选填，考生联系地址', '示例': '北京市朝阳区示例街道1号' },
+      { '字段': '出生日期', '说明': '选填，格式：YYYY-MM-DD', '示例': '1990-01-01' },
+      { '字段': '报名号', '说明': '选填，考生报名编号', '示例': 'REG2024001' },
+      {},
+      { '字段': '注意事项', '说明': '', '示例': '' },
+      { '字段': '1. 带*号的字段为必填项', '说明': '', '示例': '' },
+      { '字段': '2. 请严格按照格式要求填写', '说明': '', '示例': '' },
+      { '字段': '3. 身份证号和手机号不能重复', '说明': '', '示例': '' },
+      { '字段': '4. 单次最多导入1000条数据', '说明': '', '示例': '' },
+      { '字段': '5. 请删除示例数据后再导入', '说明': '', '示例': '' }
+    ]
+
+    const instructionWs = XLSX.utils.json_to_sheet(instructionData)
+    instructionWs['!cols'] = [{ wch: 20 }, { wch: 40 }, { wch: 25 }]
+
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, '考生信息')
+    XLSX.utils.book_append_sheet(wb, instructionWs, '填写说明')
+
+    // 生成文件并下载
+    const fileName = `考生导入模板_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    console.error('生成模板失败:', error)
+    ElMessage.error('模板生成失败，请重试')
+  }
 }
 
-const parseFile = () => {
+const parseFile = async () => {
   if (!selectedFile.value) {
     ElMessage.warning('请先选择文件')
     return
   }
 
-  // 模拟文件解析
-  const mockData = [
-    {
-      name: '张三',
-      id_number: '110101199001011234',
-      phone: '13800138001',
-      gender: '男',
-      email: 'zhangsan@example.com',
-      address: '北京市朝阳区示例街道1号',
-      birth_date: '1990-01-01'
-    },
-    {
-      name: '李四',
-      id_number: '110101199102022345',
-      phone: '13800138002',
-      gender: '女',
-      email: 'lisi@example.com',
-      address: '北京市海淀区示例街道2号',
-      birth_date: '1991-02-02'
-    },
-    {
-      name: '王五',
-      id_number: 'invalid_id',
-      phone: '138001380',
-      gender: '男',
-      email: 'wangwu@example.com',
-      address: '北京市西城区示例街道3号',
-      birth_date: '1992-03-03'
+  try {
+    ElMessage.loading('正在解析文件...')
+
+    // 读取Excel文件
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const arrayBuffer = e.target.result
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+
+          // 获取第一个工作表
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+
+          // 转换为JSON格式
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            raw: false,
+            dateNF: 'yyyy-mm-dd'
+          })
+
+          resolve(jsonData)
+        } catch (error) {
+          reject(error)
+        }
+      }
+      reader.onerror = reject
+      reader.readAsArrayBuffer(selectedFile.value)
+    })
+
+    // 处理Excel数据
+    if (data.length < 2) {
+      throw new Error('Excel文件格式不正确，至少需要包含表头和一行数据')
     }
-  ]
 
-  parseResult.data = mockData
-  parseResult.errors = {}
-  parseResult.duplicates = []
+    const headers = data[0]
+    const rows = data.slice(1)
 
-  currentStep.value = 1
-  ElMessage.success('文件解析成功')
+    // 验证表头格式
+    const requiredHeaders = ['姓名*', '身份证号*', '手机号*', '性别*']
+    const optionalHeaders = ['邮箱', '联系地址', '出生日期', '报名号']
+    const allHeaders = [...requiredHeaders, ...optionalHeaders]
+
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header))
+    if (missingHeaders.length > 0) {
+      throw new Error(`缺少必要的列标题: ${missingHeaders.join(', ')}`)
+    }
+
+    // 获取列索引映射
+    const columnMap = {}
+    allHeaders.forEach(header => {
+      const index = headers.indexOf(header)
+      if (index !== -1) {
+        columnMap[header] = index
+      }
+    })
+
+    // 转换数据格式
+    const parsedData = []
+    rows.forEach((row, index) => {
+      // 跳过空行
+      if (!row || row.every(cell => !cell || cell.toString().trim() === '')) {
+        return
+      }
+
+      const candidateData = {
+        name: row[columnMap['姓名*']] || '',
+        id_number: row[columnMap['身份证号*']] || '',
+        phone: row[columnMap['手机号*']] || '',
+        gender: row[columnMap['性别*']] || '',
+        email: row[columnMap['邮箱']] || '',
+        address: row[columnMap['联系地址']] || '',
+        birth_date: row[columnMap['出生日期']] || '',
+        registration_number: row[columnMap['报名号']] || '',
+        rowIndex: index + 2 // Excel行号（从1开始，加上表头）
+      }
+
+      // 清理数据
+      Object.keys(candidateData).forEach(key => {
+        if (typeof candidateData[key] === 'string') {
+          candidateData[key] = candidateData[key].toString().trim()
+        }
+      })
+
+      // 保持原始性别格式用于显示
+      candidateData.displayGender = candidateData.gender
+
+      // 转换性别格式用于内部处理
+      if (candidateData.gender === '男') {
+        candidateData.gender = 'male'
+      } else if (candidateData.gender === '女') {
+        candidateData.gender = 'female'
+      }
+
+      parsedData.push(candidateData)
+    })
+
+    if (parsedData.length === 0) {
+      throw new Error('未找到有效的数据行')
+    }
+
+    if (parsedData.length > 1000) {
+      throw new Error('单次最多只能导入1000条数据')
+    }
+
+    parseResult.data = parsedData
+    parseResult.errors = {}
+    parseResult.duplicates = []
+
+    currentStep.value = 1
+    ElMessage.success(`文件解析成功，共解析到 ${parsedData.length} 条数据`)
+
+  } catch (error) {
+    console.error('文件解析失败:', error)
+    ElMessage.error(error.message || '文件解析失败，请检查文件格式')
+  }
 }
 
 const validateData = () => {
@@ -496,8 +647,8 @@ const validateData = () => {
     }
 
     // 验证性别
-    if (row.gender && !['男', '女'].includes(row.gender)) {
-      errors.push({ type: '性别格式错误', message: '性别只能填写"男"或"女"', value: row.gender })
+    if (row.displayGender && !['男', '女'].includes(row.displayGender)) {
+      errors.push({ type: '性别格式错误', message: '性别只能填写"男"或"女"', value: row.displayGender })
     }
 
     // 验证邮箱
@@ -554,24 +705,57 @@ const confirmImport = async () => {
       }
     )
 
-    // 模拟导入过程
-    ElMessage.loading('正在导入数据...')
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 准备有效数据（排除有错误的行）
+    const validData = parseResult.data.filter((_, index) => !parseResult.errors[index])
 
-    // 模拟导入结果
+    // 转换数据格式以匹配API要求
+    const importData = validData.map(item => ({
+      name: item.name,
+      id_number: item.id_number,
+      phone: item.phone,
+      gender: item.gender === 'male' ? '男' : '女', // 转换回中文格式
+      email: item.email,
+      address: item.address,
+      birth_date: item.birth_date,
+      registration_number: item.registration_number,
+      institution_id: authStore.user?.institution_id || null,
+      status: 'active'
+    }))
+
+    // 创建FormData并添加JSON数据
+    const formData = new FormData()
+    const jsonBlob = new Blob([JSON.stringify(importData)], { type: 'application/json' })
+    formData.append('data', jsonBlob)
+
+    // 调用导入API
+    const result = await candidatesStore.importCandidates(formData, (progress) => {
+      // 可选：处理进度回调
+      console.log('导入进度:', progress)
+    })
+
+    // 设置导入结果
     importResult.success = true
-    importResult.message = '数据导入成功完成'
-    importResult.successCount = validCount.value
-    importResult.failedCount = 0
-    importResult.duplicateCount = duplicateCount.value
+    importResult.message = result.message || '数据导入成功完成'
+    importResult.successCount = result.successCount || validData.length
+    importResult.failedCount = result.failedCount || 0
+    importResult.duplicateCount = result.duplicateCount || duplicateCount.value
     importResult.totalCount = parseResult.data.length
 
     currentStep.value = 3
-    ElMessage.success('导入完成')
 
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('导入失败')
+      console.error('导入失败:', error)
+
+      // 设置失败结果
+      importResult.success = false
+      importResult.message = error.message || '导入过程中发生错误'
+      importResult.successCount = 0
+      importResult.failedCount = parseResult.data.length
+      importResult.duplicateCount = 0
+      importResult.totalCount = parseResult.data.length
+
+      currentStep.value = 3
     }
   }
 }

@@ -91,7 +91,7 @@
             </el-row>
 
             <el-row :gutter="20">
-              <el-col :span="12">
+              <el-col :span="8">
                 <el-form-item label="考试时长" prop="duration">
                   <el-input-number
                     v-model="form.duration"
@@ -105,7 +105,7 @@
                 </el-form-item>
               </el-col>
 
-              <el-col :span="12">
+              <el-col :span="8">
                 <el-form-item label="时间间隔">
                   <el-input-number
                     v-model="form.interval"
@@ -116,6 +116,28 @@
                     style="width: 100%"
                   />
                   <span class="input-suffix">分钟</span>
+                </el-form-item>
+              </el-col>
+
+              <el-col :span="8">
+                <el-form-item label="考场" prop="venue_id">
+                  <el-select
+                    v-model="form.venue_id"
+                    placeholder="请选择考场"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="venue in availableVenues"
+                      :key="venue.id"
+                      :label="venue.name"
+                      :value="venue.id"
+                    >
+                      <span>{{ venue.name }}</span>
+                      <span style="float: right; color: #8492a6; font-size: 13px">
+                        容量: {{ venue.capacity }}
+                      </span>
+                    </el-option>
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -243,6 +265,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { useSchedulesStore } from '@/store/schedules'
+import { useCandidatesStore } from '@/store/candidates'
+import { useSystemStore } from '@/store/system'
 
 // 数据状态
 const formRef = ref()
@@ -250,9 +275,15 @@ const candidateTable = ref()
 const creating = ref(false)
 const candidateSearch = ref('')
 
+// 存储引用
+const schedulesStore = useSchedulesStore()
+const candidatesStore = useCandidatesStore()
+const systemStore = useSystemStore()
+
 const form = reactive({
   product_id: '',
   institution_id: '',
+  venue_id: '',
   dateRange: [],
   timeRange: [],
   duration: 60,
@@ -262,31 +293,21 @@ const form = reactive({
 const rules = {
   product_id: [{ required: true, message: '请选择考试产品', trigger: 'change' }],
   institution_id: [{ required: true, message: '请选择考试机构', trigger: 'change' }],
+  venue_id: [{ required: true, message: '请选择考场', trigger: 'change' }],
   dateRange: [{ required: true, message: '请选择日期范围', trigger: 'change' }],
   duration: [{ required: true, message: '请设置考试时长', trigger: 'blur' }]
 }
 
-// 模拟数据
-const products = ref([
-  { id: 1, name: '无人机驾驶员理论考试', duration: 90 },
-  { id: 2, name: '无人机驾驶员实操考试', duration: 60 }
-])
-
-const institutions = ref([
-  { id: 1, name: '测试考试机构' }
-])
-
+// 响应式数据
 const timeSlots = ref([])
 const selectedSlots = ref([])
 const selectedCandidates = ref([])
+const availableVenues = ref([])
 
-const candidates = ref([
-  { id: 1, name: '张三', id_number: '110101199001011234', phone: '13800138001', registration_number: 'REG2024001', status: 'active' },
-  { id: 2, name: '李四', id_number: '110101199102022345', phone: '13800138002', registration_number: 'REG2024002', status: 'active' },
-  { id: 3, name: '王五', id_number: '110101199203033456', phone: '13800138003', registration_number: 'REG2024003', status: 'active' },
-  { id: 4, name: '赵六', id_number: '110101199304044567', phone: '13800138004', registration_number: 'REG2024004', status: 'active' },
-  { id: 5, name: '钱七', id_number: '110101199405055678', phone: '13800138005', registration_number: 'REG2024005', status: 'active' }
-])
+// 计算属性 - 数据源
+const products = computed(() => systemStore.examProducts)
+const institutions = computed(() => systemStore.institutions)
+const candidates = computed(() => candidatesStore.candidates)
 
 // 计算属性
 const isAllSelected = computed(() => {
@@ -321,7 +342,7 @@ const schedulePreview = computed(() => {
           date: formatDate(slot.date),
           time: `${slot.startTime} - ${slot.endTime}`,
           duration: form.duration,
-          venue: '考场A'
+          venue: availableVenues.value.find(v => v.id === form.venue_id)?.name || '未选择考场'
         })
       }
     }
@@ -416,6 +437,14 @@ const handleCandidateSelectionChange = (selection) => {
 }
 
 const createBatchSchedules = async () => {
+  // 验证表单
+  try {
+    await formRef.value.validate()
+  } catch {
+    ElMessage.warning('请完善表单信息')
+    return
+  }
+
   if (schedulePreview.value.length === 0) {
     ElMessage.warning('请先选择时间段和考生')
     return
@@ -434,15 +463,38 @@ const createBatchSchedules = async () => {
 
     creating.value = true
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 准备批量创建数据
+    const batchData = {
+      product_id: form.product_id,
+      institution_id: form.institution_id,
+      venue_id: form.venue_id,
+      schedules: schedulePreview.value.map((item, index) => {
+        const slotId = selectedSlots.value[index % selectedSlots.value.length]
+        const slot = timeSlots.value.find(s => s.id === slotId)
+        const candidate = selectedCandidates.value[Math.floor(index / selectedSlots.value.length)]
 
-    ElMessage.success(`成功创建${schedulePreview.value.length}个排期`)
+        return {
+          candidate_id: candidate.id,
+          venue_id: form.venue_id,
+          exam_date: slot.date.toISOString().split('T')[0],
+          start_time: slot.startTime,
+          end_time: slot.endTime,
+          duration: form.duration,
+          status: 'pending'
+        }
+      })
+    }
+
+    // 调用API创建批量排期
+    const result = await schedulesStore.batchCreateSchedules(batchData)
+
+    ElMessage.success(`成功创建${result.successCount}个排期`)
     resetForm()
 
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('创建排期失败')
+      console.error('创建排期失败:', error)
+      ElMessage.error(error.message || '创建排期失败')
     }
   } finally {
     creating.value = false
@@ -458,8 +510,21 @@ const resetForm = () => {
   candidateTable.value?.clearSelection()
 }
 
-onMounted(() => {
-  // 页面初始化
+onMounted(async () => {
+  // 加载基础数据
+  try {
+    await Promise.all([
+      systemStore.loadExamProducts(),
+      systemStore.loadInstitutions(),
+      candidatesStore.loadCandidates({ status: 'active' }),
+      schedulesStore.loadAvailableVenues()
+    ])
+
+    availableVenues.value = schedulesStore.availableVenues
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载页面数据失败')
+  }
 })
 </script>
 

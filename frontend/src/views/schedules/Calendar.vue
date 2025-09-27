@@ -302,6 +302,8 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { useSchedulesStore } from '@/store/schedules'
+import { useSystemStore } from '@/store/system'
 
 // 数据状态
 const viewType = ref('month')
@@ -309,64 +311,20 @@ const currentDate = ref(new Date())
 const detailDialogVisible = ref(false)
 const selectedSchedule = ref(null)
 
+// 存储引用
+const schedulesStore = useSchedulesStore()
+const systemStore = useSystemStore()
+
 const filters = reactive({
   institution: '',
   product: '',
   status: ''
 })
 
-// 模拟数据
-const institutions = ref([
-  { id: 1, name: '测试考试机构' }
-])
-
-const products = ref([
-  { id: 1, name: '无人机驾驶员理论考试' },
-  { id: 2, name: '无人机驾驶员实操考试' }
-])
-
-const schedules = ref([
-  {
-    id: 1,
-    candidate_name: '张三',
-    candidate_phone: '13800138001',
-    candidate_id_number: '110101199001011234',
-    registration_number: 'REG2024001',
-    product_name: '无人机驾驶员理论考试',
-    venue_name: '理论考试室A',
-    scheduled_at: new Date(2024, 11, 28, 9, 0),
-    duration: 90,
-    status: 'scheduled',
-    time: '09:00-10:30',
-    notes: '首次考试'
-  },
-  {
-    id: 2,
-    candidate_name: '李四',
-    candidate_phone: '13800138002',
-    candidate_id_number: '110101199102022345',
-    registration_number: 'REG2024002',
-    product_name: '无人机驾驶员实操考试',
-    venue_name: '实操考试场地B',
-    scheduled_at: new Date(2024, 11, 28, 14, 0),
-    duration: 60,
-    status: 'ongoing',
-    time: '14:00-15:00'
-  },
-  {
-    id: 3,
-    candidate_name: '王五',
-    candidate_phone: '13800138003',
-    candidate_id_number: '110101199203033456',
-    registration_number: 'REG2024003',
-    product_name: '无人机驾驶员理论考试',
-    venue_name: '理论考试室A',
-    scheduled_at: new Date(2024, 11, 29, 10, 0),
-    duration: 90,
-    status: 'completed',
-    time: '10:00-11:30'
-  }
-])
+// 计算属性 - 数据源
+const institutions = computed(() => systemStore.institutions)
+const products = computed(() => systemStore.examProducts)
+const schedules = computed(() => schedulesStore.schedules)
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 const hours = Array.from({ length: 10 }, (_, i) => i + 8) // 8:00 - 17:00
@@ -407,9 +365,25 @@ const monthDays = computed(() => {
 
   for (let i = 0; i < 42; i++) {
     const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
-    const daySchedules = schedules.value.filter(s =>
-      s.scheduled_at.toDateString() === date.toDateString()
-    )
+    const dateString = date.toISOString().split('T')[0]
+
+    // 筛选当天的排期
+    const daySchedules = schedules.value.filter(s => {
+      const scheduleDate = s.exam_date || s.scheduled_at
+      if (!scheduleDate) return false
+
+      const scheduleDateString = typeof scheduleDate === 'string'
+        ? scheduleDate.split('T')[0]
+        : new Date(scheduleDate).toISOString().split('T')[0]
+
+      return scheduleDateString === dateString
+    }).map(s => ({
+      ...s,
+      time: s.start_time && s.end_time ? `${s.start_time}-${s.end_time}` : s.time,
+      candidate_name: s.candidate_name || s.candidate?.name,
+      product_name: s.product_name || s.product?.name,
+      venue_name: s.venue_name || s.venue?.name
+    }))
 
     days.push({
       date: date.toISOString(),
@@ -443,9 +417,34 @@ const weekDays = computed(() => {
 })
 
 const daySchedules = computed(() => {
+  const currentDateString = currentDate.value.toISOString().split('T')[0]
+
   return schedules.value
-    .filter(s => s.scheduled_at.toDateString() === currentDate.value.toDateString())
-    .sort((a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime())
+    .filter(s => {
+      const scheduleDate = s.exam_date || s.scheduled_at
+      if (!scheduleDate) return false
+
+      const scheduleDateString = typeof scheduleDate === 'string'
+        ? scheduleDate.split('T')[0]
+        : new Date(scheduleDate).toISOString().split('T')[0]
+
+      return scheduleDateString === currentDateString
+    })
+    .map(s => ({
+      ...s,
+      time: s.start_time && s.end_time ? `${s.start_time}-${s.end_time}` : s.time,
+      candidate_name: s.candidate_name || s.candidate?.name,
+      candidate_phone: s.candidate_phone || s.candidate?.phone,
+      candidate_id_number: s.candidate_id_number || s.candidate?.id_number,
+      product_name: s.product_name || s.product?.name,
+      venue_name: s.venue_name || s.venue?.name,
+      registration_number: s.registration_number || s.candidate?.registration_number
+    }))
+    .sort((a, b) => {
+      const timeA = a.start_time || '00:00'
+      const timeB = b.start_time || '00:00'
+      return timeA.localeCompare(timeB)
+    })
 })
 
 // 方法
@@ -494,11 +493,30 @@ const selectDate = (day) => {
 }
 
 const getHourSchedules = (date, hour) => {
+  const targetDateString = new Date(date).toISOString().split('T')[0]
+
   return schedules.value.filter(s => {
-    const scheduleDate = new Date(s.scheduled_at)
-    return scheduleDate.toDateString() === new Date(date).toDateString() &&
-           scheduleDate.getHours() === hour
-  })
+    const scheduleDate = s.exam_date || s.scheduled_at
+    if (!scheduleDate) return false
+
+    const scheduleDateString = typeof scheduleDate === 'string'
+      ? scheduleDate.split('T')[0]
+      : new Date(scheduleDate).toISOString().split('T')[0]
+
+    if (scheduleDateString !== targetDateString) return false
+
+    // 检查时间
+    const startTime = s.start_time
+    if (!startTime) return false
+
+    const scheduleHour = parseInt(startTime.split(':')[0])
+    return scheduleHour === hour
+  }).map(s => ({
+    ...s,
+    time: s.start_time && s.end_time ? `${s.start_time}-${s.end_time}` : s.time,
+    candidate_name: s.candidate_name || s.candidate?.name,
+    product_name: s.product_name || s.product?.name
+  }))
 }
 
 const viewScheduleDetail = (schedule) => {
@@ -527,12 +545,19 @@ const cancelSchedule = async () => {
       }
     )
 
-    selectedSchedule.value.status = 'cancelled'
+    // 调用API取消排期
+    await schedulesStore.updateScheduleStatus(selectedSchedule.value.id, 'cancelled')
     ElMessage.success('排期已取消')
     detailDialogVisible.value = false
 
+    // 重新加载数据
+    await loadSchedules()
+
   } catch (error) {
-    // 用户取消操作
+    if (error !== 'cancel') {
+      console.error('取消排期失败:', error)
+      ElMessage.error('取消排期失败')
+    }
   }
 }
 
@@ -560,17 +585,57 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
-const loadSchedules = () => {
-  // 这里应该调用API加载排期数据
-  // 根据filters进行筛选
-  console.log('Loading schedules with filters:', filters)
+const loadSchedules = async () => {
+  try {
+    // 根据视图类型计算日期范围
+    let startDate, endDate
+
+    if (viewType.value === 'month') {
+      const year = currentDate.value.getFullYear()
+      const month = currentDate.value.getMonth()
+      startDate = new Date(year, month, 1).toISOString().split('T')[0]
+      endDate = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    } else if (viewType.value === 'week') {
+      const weekStart = getWeekStart(currentDate.value)
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+      startDate = weekStart.toISOString().split('T')[0]
+      endDate = weekEnd.toISOString().split('T')[0]
+    } else {
+      startDate = currentDate.value.toISOString().split('T')[0]
+      endDate = startDate
+    }
+
+    // 准备查询参数
+    const params = {
+      start_date: startDate,
+      end_date: endDate,
+      ...filters
+    }
+
+    // 加载排期数据
+    await schedulesStore.loadSchedules(params)
+  } catch (error) {
+    console.error('加载排期数据失败:', error)
+    ElMessage.error('加载排期数据失败')
+  }
 }
 
-onMounted(() => {
-  loadSchedules()
+onMounted(async () => {
+  // 加载基础数据
+  try {
+    await Promise.all([
+      systemStore.loadInstitutions(),
+      systemStore.loadExamProducts()
+    ])
+    await loadSchedules()
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+    ElMessage.error('加载页面数据失败')
+  }
 })
 
-watch([filters], () => {
+// 监听日期、视图类型和筛选条件变化
+watch([currentDate, viewType, filters], () => {
   loadSchedules()
 }, { deep: true })
 </script>

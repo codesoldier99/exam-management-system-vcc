@@ -554,6 +554,7 @@ import {
   Plus, Search, Upload, Download, ArrowDown, Location, OfficeBuilding, Monitor,
   Tools, DataBoard, Delete, SuccessFilled, WarningFilled, CircleCloseFilled
 } from '@element-plus/icons-vue'
+import { useSystemStore } from '@/store/system'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -562,6 +563,9 @@ const submitLoading = ref(false)
 const isEdit = ref(false)
 const activeTab = ref('basic')
 const formRef = ref()
+
+// 存储引用
+const systemStore = useSystemStore()
 
 const searchForm = reactive({
   keyword: '',
@@ -578,11 +582,15 @@ const pagination = reactive({
   total: 0
 })
 
-const stats = reactive({
-  available: 12,
-  occupied: 8,
-  maintenance: 2,
-  total: 22
+// 计算属性 - 统计数据
+const stats = computed(() => {
+  const venues = systemStore.venues
+  return {
+    available: venues.filter(v => v.status === 'available').length,
+    occupied: venues.filter(v => v.status === 'occupied').length,
+    maintenance: venues.filter(v => v.status === 'maintenance').length,
+    total: venues.length
+  }
 })
 
 const form = reactive({
@@ -638,7 +646,10 @@ const formRules = {
   ]
 }
 
-const tableData = ref([
+// 计算属性 - 表格数据
+const tableData = computed(() => systemStore.venues)
+
+const mockTableData = ref([
   {
     id: 1,
     code: 'VE001',
@@ -953,18 +964,37 @@ const handlePageChange = (page) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
-    pagination.total = 50
+    // 准备查询参数
+    const params = {
+      page: pagination.page,
+      limit: pagination.size,
+      search: searchForm.keyword,
+      institution_id: searchForm.institutionId,
+      type: searchForm.type,
+      status: searchForm.status
+    }
+
+    await systemStore.loadVenues(params)
+    pagination.total = systemStore.venuesPagination.total
   } catch (error) {
+    console.error('加载数据失败:', error)
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchData()
+onMounted(async () => {
+  // 加载基础数据
+  try {
+    await Promise.all([
+      systemStore.loadInstitutions(),
+      fetchData()
+    ])
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+    ElMessage.error('加载页面数据失败')
+  }
 })
 </script>
 

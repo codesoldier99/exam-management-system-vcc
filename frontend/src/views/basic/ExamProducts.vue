@@ -353,6 +353,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Upload, Download, UploadFilled } from '@element-plus/icons-vue'
+import { useSystemStore } from '@/store/system'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -362,6 +363,9 @@ const importLoading = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
 const uploadRef = ref()
+
+// 存储引用
+const systemStore = useSystemStore()
 
 const searchForm = reactive({
   keyword: '',
@@ -377,6 +381,7 @@ const pagination = reactive({
 })
 
 const form = reactive({
+  id: null,
   code: '',
   name: '',
   type: '',
@@ -415,36 +420,9 @@ const formRules = {
   ]
 }
 
-const tableData = ref([
-  {
-    id: 1,
-    code: 'UAV-001',
-    name: '无人机理论基础',
-    type: 'theory',
-    difficulty: 'basic',
-    duration: 90,
-    totalQuestions: 80,
-    passingScore: 70,
-    status: 'active',
-    description: '无人机基础理论知识考试',
-    instructions: '请仔细阅读题目，选择正确答案',
-    createdAt: '2024-01-15 10:30:00'
-  },
-  {
-    id: 2,
-    code: 'UAV-002',
-    name: '飞行操作实务',
-    type: 'practical',
-    difficulty: 'intermediate',
-    duration: 120,
-    totalQuestions: 60,
-    passingScore: 75,
-    status: 'active',
-    description: '无人机飞行操作实务考试',
-    instructions: '请按照操作要求完成实际飞行任务',
-    createdAt: '2024-01-16 14:20:00'
-  }
-])
+// 计算属性 - 数据源
+const tableData = computed(() => systemStore.examProducts)
+const totalCount = computed(() => systemStore.examProductsPagination.total)
 
 const fileList = ref([])
 const selectedRows = ref([])
@@ -488,6 +466,7 @@ const resetForm = () => {
     else if (key === 'totalQuestions') form[key] = 50
     else if (key === 'passingScore') form[key] = 60
     else if (key === 'status') form[key] = 'active'
+    else if (key === 'id') form[key] = null
     else form[key] = ''
   })
 }
@@ -505,8 +484,9 @@ const handleAdd = () => {
 
 const handleEdit = (row) => {
   Object.keys(form).forEach(key => {
-    form[key] = row[key] || ''
+    form[key] = row[key] || (key === 'duration' ? 60 : key === 'totalQuestions' ? 50 : key === 'passingScore' ? 60 : key === 'status' ? 'active' : '')
   })
+  form.id = row.id // 确保包含ID
   isEdit.value = true
   dialogVisible.value = true
 }
@@ -542,18 +522,23 @@ const handleCopy = (row) => {
 
 const handleDelete = async (id) => {
   try {
+    await systemStore.deleteExamProduct(id)
     ElMessage.success('删除成功')
     await fetchData()
   } catch (error) {
-    ElMessage.error('删除失败')
+    console.error('删除失败:', error)
+    ElMessage.error(error.message || '删除失败')
   }
 }
 
 const handleStatusChange = async (row) => {
   try {
+    await systemStore.updateExamProduct(row.id, { status: row.status })
     ElMessage.success('状态更新成功')
   } catch (error) {
+    console.error('状态更新失败:', error)
     ElMessage.error('状态更新失败')
+    // 回滚状态
     row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 }
@@ -583,14 +568,26 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitLoading.value = true
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 准备提交数据
+    const submitData = { ...form }
 
-    ElMessage.success(isEdit.value ? '更新成功' : '新增成功')
+    if (isEdit.value) {
+      // 更新考试产品
+      await systemStore.updateExamProduct(form.id, submitData)
+      ElMessage.success('更新成功')
+    } else {
+      // 创建考试产品
+      await systemStore.createExamProduct(submitData)
+      ElMessage.success('新增成功')
+    }
+
     dialogVisible.value = false
     await fetchData()
   } catch (error) {
-    console.error('Form validation failed:', error)
+    console.error('提交失败:', error)
+    if (error.message) {
+      ElMessage.error(error.message)
+    }
   } finally {
     submitLoading.value = false
   }
@@ -658,10 +655,20 @@ const handlePageChange = (page) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
-    pagination.total = 50
+    // 准备查询参数
+    const params = {
+      page: pagination.page,
+      limit: pagination.size,
+      search: searchForm.keyword,
+      type: searchForm.type,
+      status: searchForm.status,
+      difficulty: searchForm.difficulty
+    }
+
+    await systemStore.loadExamProducts(params)
+    pagination.total = systemStore.examProductsPagination.total
   } catch (error) {
+    console.error('加载数据失败:', error)
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
